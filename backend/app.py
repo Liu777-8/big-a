@@ -4,9 +4,23 @@ import akshare as ak
 from datetime import datetime, timedelta
 import pandas as pd
 from io import BytesIO
+import os
 
 app = Flask(__name__)
-CORS(app)  # 允许跨域请求
+
+# 配置CORS，允许所有来源（生产环境建议指定具体域名）
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "http://localhost:5173",
+            "http://localhost:4173", 
+            "https://*.vercel.app",
+            os.environ.get('FRONTEND_URL', '*')
+        ],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 def format_numeric_value(value, decimals=3):
     """
@@ -608,4 +622,10 @@ def download_limit_down_data():
         }), 400
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    import os
+    # 生产环境使用环境变量PORT，本地开发使用5000
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV', 'development') == 'development'
+    
+    # Render 部署时使用 Werkzeug 服务器（对于小项目足够）
+    app.run(debug=False, host='0.0.0.0', port=port, threaded=True)
