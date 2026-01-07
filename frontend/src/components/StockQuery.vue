@@ -352,7 +352,7 @@ const queryTime = ref(""); // 查询时间
 
 // 查询历史记录
 const queryHistory = ref([]);
-const MAX_HISTORY = 10; // 最多保存10条历史记录
+const MAX_HISTORY = 20; // 最多保存20条历史记录
 
 // 自动刷新相关
 const autoRefresh = ref(false);
