@@ -8,19 +8,12 @@ import os
 
 app = Flask(__name__)
 
-# 配置CORS，允许所有来源（生产环境建议指定具体域名）
-CORS(app, resources={
-    r"/api/*": {
-        "origins": [
-            "http://localhost:5173",
-            "http://localhost:4173", 
-            "https://*.vercel.app",
-            os.environ.get('FRONTEND_URL', '*')
-        ],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
-    }
-})
+# 配置CORS - 简化配置，允许所有来源
+CORS(app, 
+     resources={r"/api/*": {"origins": "*"}},
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "OPTIONS"],
+     supports_credentials=False)
 
 def format_numeric_value(value, decimals=3):
     """
@@ -635,6 +628,11 @@ def download_limit_down_data():
 
 if __name__ == '__main__':
     import os
+    import socket
+    
+    # 设置全局 socket 超时
+    socket.setdefaulttimeout(30)
+    
     # 生产环境使用环境变量PORT，本地开发使用5000
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV', 'development') == 'development'
