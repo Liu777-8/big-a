@@ -384,7 +384,9 @@ const queryStock = async () => {
   historyData.value = null;
 
   try {
-    const response = await axios.get(`/api/stock/info/${form.value.stockCode}`);
+    const response = await axios.get("/api/stock/info", {
+      params: { code: form.value.stockCode },
+    });
 
     if (response.data.success) {
       basicInfo.value = response.data.data.basic_info;
