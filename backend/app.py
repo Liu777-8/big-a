@@ -72,24 +72,61 @@ def get_stock_info():
         return jsonify({'success': False, 'message': '缺少股票代码参数'}), 400
     
     try:
-        # 1. 获取个股基本信息
-        stock_info = ak.stock_individual_info_em(symbol=stock_code)
         info_result = {}
-        for index, row in stock_info.iterrows():
-            info_result[row['item']] = format_numeric_value(row['value'])
-        
-        # 2. 获取实时行情数据 - 使用 stock_zh_a_spot_em
         realtime_data = None
+        
+        # 1. 获取个股基本信息
         try:
-            # 获取所有A股实时数据
-            df = ak.stock_zh_a_spot_em()
-            # 筛选指定股票
-            stock_data = df[df['代码'] == stock_code]
+            stock_info = ak.stock_individual_info_em(symbol=stock_code)
+            for index, row in stock_info.iterrows():
+                info_result[row['item']] = format_numeric_value(row['value'])
+        except Exception as e:
+            print(f"基本信息获取失败: {e}")
+            # 基本信息失败时返回空字典，继续尝试获取实时数据
+        
+        # 2. 获取实时行情数据 - 使用单个股票查询避免超时
+        try:
+            # 使用更轻量级的方法：获取单日历史数据作为实时数据
+            today = datetime.now().strftime('%Y%m%d')
+            yesterday = (datetime.now() - timedelta(days=3)).strftime('%Y%m%d')
             
-            if not stock_data.empty:
-                realtime_data = format_dict_values(stock_data.to_dict('records')[0])
+            df_hist = ak.stock_zh_a_hist(
+                symbol=stock_code,
+                period='daily',
+                start_date=yesterday,
+                end_date=today,
+                adjust=''
+            )
+            
+            if not df_hist.empty:
+                # 获取最新一条数据
+                latest = df_hist.iloc[-1].to_dict()
+                # 构造类似实时数据的格式
+                realtime_data = {
+                    '代码': stock_code,
+                    '名称': info_result.get('股票简称', stock_code),
+                    '最新价': format_numeric_value(latest.get('收盘')),
+                    '涨跌幅': format_numeric_value(latest.get('涨跌幅')),
+                    '涨跌额': format_numeric_value(latest.get('涨跌额')),
+                    '成交量': format_numeric_value(latest.get('成交量')),
+                    '成交额': format_numeric_value(latest.get('成交额')),
+                    '振幅': format_numeric_value(latest.get('振幅')),
+                    '最高': format_numeric_value(latest.get('最高')),
+                    '最低': format_numeric_value(latest.get('最低')),
+                    '今开': format_numeric_value(latest.get('开盘')),
+                    '昨收': format_numeric_value(latest.get('昨收', latest.get('收盘'))),
+                    '换手率': format_numeric_value(latest.get('换手率')),
+                }
         except Exception as e:
             print(f"实时数据获取失败: {e}")
+            # 实时数据获取失败，保持为None
+        
+        # 如果两个数据都为空，返回错误
+        if not info_result and not realtime_data:
+            return jsonify({
+                'success': False,
+                'message': '无法获取股票信息，请检查股票代码是否正确'
+            }), 404
         
         return jsonify({
             'success': True,
@@ -100,10 +137,13 @@ def get_stock_info():
             }
         })
     except Exception as e:
+        print(f"接口异常: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'message': f'查询失败: {str(e)}'
-        }), 400
+        }), 500
 
 @app.route('/api/stock/history', methods=['GET'])
 def get_stock_history():
