@@ -68,12 +68,16 @@ def index():
         'version': '1.0.0'
     })
 
-@app.route('/api/stock/info/<stock_code>', methods=['GET'])
-def get_stock_info(stock_code):
+@app.route('/api/stock/info', methods=['GET'])
+def get_stock_info():
     """
     获取个股综合信息（基本信息 + 实时数据）
-    参数: stock_code - 股票代码，如：600000
+    参数: code - 股票代码，如：600000（查询参数）
     """
+    stock_code = request.args.get('code')
+    if not stock_code:
+        return jsonify({'success': False, 'message': '缺少股票代码参数'}), 400
+    
     try:
         # 1. 获取个股基本信息
         stock_info = ak.stock_individual_info_em(symbol=stock_code)
@@ -108,17 +112,21 @@ def get_stock_info(stock_code):
             'message': f'查询失败: {str(e)}'
         }), 400
 
-@app.route('/api/stock/history/<stock_code>', methods=['GET'])
-def get_stock_history(stock_code):
+@app.route('/api/stock/history', methods=['GET'])
+def get_stock_history():
     """
     获取历史行情数据
     参数: 
-        stock_code - 股票代码
+        code - 股票代码（查询参数）
         start_date - 开始日期 (format: 20210101)
         end_date - 结束日期 (format: 20211231)
         period - 周期 (daily, weekly, monthly)
         adjust - 复权类型 (qfq-前复权, hfq-后复权, 空-不复权)
     """
+    stock_code = request.args.get('code')
+    if not stock_code:
+        return jsonify({'success': False, 'message': '缺少股票代码参数'}), 400
+    
     try:
         start_date = request.args.get('start_date', '20240101')
         end_date = request.args.get('end_date', '20241231')
@@ -355,14 +363,18 @@ def get_limit_down_stocks():
             'message': f'查询失败: {str(e)}'
         }), 400
 
-@app.route('/api/stock/download/<stock_code>', methods=['GET'])
-def download_stock_data(stock_code):
+@app.route('/api/stock/download', methods=['GET'])
+def download_stock_data():
     """
     下载股票历史数据为Excel
     参数: 
-        stock_code - 股票代码
+        code - 股票代码（查询参数）
         days - 天数，默认7天
     """
+    stock_code = request.args.get('code')
+    if not stock_code:
+        return jsonify({'success': False, 'message': '缺少股票代码参数'}), 400
+    
     try:
         # 获取天数参数，默认7天
         days = int(request.args.get('days', 7))

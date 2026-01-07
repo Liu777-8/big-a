@@ -446,17 +446,15 @@ const queryHistoryData = async () => {
   historyLoading.value = true;
 
   try {
-    const response = await axios.get(
-      `/api/stock/history/${form.value.stockCode}`,
-      {
-        params: {
-          start_date: historyForm.value.startDate,
-          end_date: historyForm.value.endDate,
-          period: historyForm.value.period,
-          adjust: historyForm.value.adjust,
-        },
-      }
-    );
+    const response = await axios.get("/api/stock/history", {
+      params: {
+        code: form.value.stockCode,
+        start_date: historyForm.value.startDate,
+        end_date: historyForm.value.endDate,
+        period: historyForm.value.period,
+        adjust: historyForm.value.adjust,
+      },
+    });
 
     if (response.data.success) {
       historyData.value = response.data.data;
@@ -538,7 +536,9 @@ const refreshStockData = async () => {
   if (!form.value.stockCode) return;
 
   try {
-    const response = await axios.get(`/api/stock/info/${form.value.stockCode}`);
+    const response = await axios.get("/api/stock/info", {
+      params: { code: form.value.stockCode },
+    });
 
     if (response.data.success) {
       basicInfo.value = response.data.data.basic_info;
@@ -619,16 +619,14 @@ const downloadExcel = async (days = 7) => {
     ElMessage.info(`正在生成${periodText}Excel文件...`);
 
     // 添加查询时间参数
-    const response = await axios.get(
-      `/api/stock/download/${form.value.stockCode}`,
-      {
-        params: {
-          days,
-          query_time: queryTime.value, // 传递查询时间
-        },
-        responseType: "blob",
-      }
-    );
+    const response = await axios.get("/api/stock/download", {
+      params: {
+        code: form.value.stockCode,
+        days,
+        query_time: queryTime.value, // 传递查询时间
+      },
+      responseType: "blob",
+    });
 
     // 创建下载链接
     const url = window.URL.createObjectURL(new Blob([response.data]));
