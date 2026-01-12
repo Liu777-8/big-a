@@ -160,7 +160,6 @@ defineExpose({
 <style scoped>
 .strong-stocks {
   width: 100%;
-  max-width: 1600px;
 }
 
 .board-card {
@@ -272,5 +271,110 @@ defineExpose({
 
 :deep(.el-checkbox) {
   font-weight: 600;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .board-card {
+    border-radius: 8px;
+  }
+
+  .card-header {
+    font-size: 18px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .header-controls {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .header-controls .el-button,
+  .header-controls .el-date-picker {
+    width: 100%;
+  }
+
+  .stats-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+  }
+
+  .stats-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .update-time {
+    font-size: 12px;
+  }
+
+  /* 表格适配 */
+  :deep(.el-table) {
+    font-size: 12px;
+  }
+
+  :deep(.el-table th) {
+    font-size: 12px;
+    padding: 8px 0;
+  }
+
+  :deep(.el-table .cell) {
+    padding: 8px 5px;
+    line-height: 1.4;
+  }
+
+  :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+
+  /* 隐藏部分列 */
+  :deep(.el-table .el-table__cell:nth-child(n + 6)) {
+    display: none;
+  }
+
+  :deep(.el-tag) {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .card-header {
+    font-size: 16px;
+  }
+
+  .update-time {
+    font-size: 11px;
+    padding: 3px 10px;
+  }
+
+  /* 表格更紧凑 */
+  :deep(.el-table) {
+    font-size: 11px;
+  }
+
+  :deep(.el-table th) {
+    font-size: 11px;
+  }
+
+  :deep(.el-table .cell) {
+    padding: 6px 3px;
+  }
+
+  /* 小屏只显示核心列 */
+  :deep(.el-table .el-table__cell:nth-child(n + 5)) {
+    display: none;
+  }
+
+  :deep(.el-tag) {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
 }
 </style>

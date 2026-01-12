@@ -660,7 +660,6 @@ const downloadExcel = async (days = 7) => {
 <style scoped>
 .stock-query {
   width: 100%;
-  max-width: 1400px;
 }
 
 .query-card {
@@ -1023,5 +1022,227 @@ const downloadExcel = async (days = 7) => {
 
 :deep(.metric-card .el-card__body) {
   padding: 15px 10px;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .query-card {
+    border-radius: 8px;
+    margin: 0;
+  }
+
+  .card-header {
+    font-size: 18px;
+  }
+
+  /* 表单适配 */
+  :deep(.el-form-item__label) {
+    font-size: 13px;
+  }
+
+  :deep(.el-input__inner) {
+    font-size: 14px;
+  }
+
+  :deep(.el-button) {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  /* 查询历史网格适配 */
+  .history-list {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .history-item {
+    padding: 12px 10px;
+  }
+
+  .stock-name {
+    font-size: 13px;
+  }
+
+  .stock-code {
+    font-size: 12px;
+  }
+
+  /* 查询时间信息 */
+  .query-time-info {
+    font-size: 12px;
+    padding: 10px 12px;
+  }
+
+  /* 核心指标卡片 - 改为2列 */
+  .key-metrics :deep(.el-col) {
+    width: 50% !important;
+    max-width: 50% !important;
+    flex: 0 0 50% !important;
+    margin-bottom: 12px;
+  }
+
+  .metric-card {
+    padding: 10px 8px;
+  }
+
+  .metric-label {
+    font-size: 12px;
+  }
+
+  .metric-value {
+    font-size: 18px;
+  }
+
+  .metric-value.price {
+    font-size: 22px;
+  }
+
+  /* 描述列表适配 */
+  :deep(.el-descriptions) {
+    font-size: 12px;
+  }
+
+  :deep(.el-descriptions__label) {
+    width: 80px;
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  :deep(.el-descriptions__content) {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  :deep(.realtime-details) {
+    font-size: 12px;
+  }
+
+  :deep(.realtime-details .el-descriptions__label) {
+    width: 70px;
+  }
+
+  /* 历史查询区域 */
+  .history-query-area {
+    padding: 15px;
+  }
+
+  :deep(.el-col) {
+    margin-bottom: 0;
+  }
+
+  /* 表格适配 */
+  :deep(.el-table) {
+    font-size: 12px;
+  }
+
+  :deep(.el-table th) {
+    font-size: 12px;
+    padding: 8px 0;
+  }
+
+  :deep(.el-table .cell) {
+    padding: 8px 5px;
+    line-height: 1.4;
+  }
+
+  :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+
+  /* 下载按钮适配 */
+  :deep(.el-form-item .el-button) {
+    margin-left: 0 !important;
+    margin-top: 8px;
+    width: 100%;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .card-header {
+    font-size: 16px;
+  }
+
+  /* 查询历史改为单列 */
+  .history-list {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .history-header {
+    padding: 12px 15px;
+  }
+
+  .history-title {
+    font-size: 14px;
+  }
+
+  /* 核心指标卡片 - 小屏单列 */
+  .key-metrics :deep(.el-col) {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    margin-bottom: 10px;
+  }
+
+  .metric-label {
+    font-size: 13px;
+  }
+
+  .metric-value {
+    font-size: 20px;
+  }
+
+  .metric-value.price {
+    font-size: 24px;
+  }
+
+  /* 描述列表改为单列 */
+  :deep(.el-descriptions) {
+    font-size: 11px;
+  }
+
+  :deep(.el-descriptions__label) {
+    width: 90px;
+    font-size: 11px;
+  }
+
+  :deep(.el-descriptions__content) {
+    font-size: 11px;
+  }
+
+  /* 历史查询表单改为单列 */
+  :deep(.el-form .el-col) {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* 按钮全宽 */
+  :deep(.el-button) {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-bottom: 8px;
+  }
+
+  .refresh-countdown {
+    display: block;
+    margin-left: 0 !important;
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  /* 表格字体更小 */
+  :deep(.el-table) {
+    font-size: 11px;
+  }
+
+  :deep(.el-table th) {
+    font-size: 11px;
+  }
+
+  :deep(.el-table .cell) {
+    padding: 6px 3px;
+  }
 }
 </style>

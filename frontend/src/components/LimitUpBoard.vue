@@ -353,7 +353,6 @@ defineExpose({
 <style scoped>
 .limit-up-board {
   width: 100%;
-  max-width: 1600px;
 }
 
 .board-card {
@@ -478,5 +477,132 @@ defineExpose({
 
 :deep(.el-table .cell) {
   padding: 8px 0;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .board-card {
+    border-radius: 8px;
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-title {
+    font-size: 18px;
+  }
+
+  .header-controls {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .header-controls .el-button,
+  .header-controls .el-date-picker {
+    width: 100%;
+  }
+
+  :deep(.header-controls .el-input__wrapper) {
+    padding: 10px 12px;
+  }
+
+  .stats-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .stats-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .time-info {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .trade-date {
+    font-size: 14px;
+  }
+
+  .update-time {
+    font-size: 12px;
+  }
+
+  /* 表格适配 */
+  :deep(.el-table) {
+    font-size: 12px;
+  }
+
+  :deep(.el-table th) {
+    font-size: 12px;
+    padding: 8px 0;
+  }
+
+  :deep(.el-table .cell) {
+    padding: 8px 5px;
+    line-height: 1.4;
+  }
+
+  :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+
+  /* 隐藏部分列以适配小屏 */
+  :deep(.el-table .el-table__cell:nth-child(n + 6)) {
+    display: none;
+  }
+
+  :deep(.el-tag) {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .header-title {
+    font-size: 16px;
+  }
+
+  .header-controls .el-button {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .trade-date {
+    font-size: 13px;
+  }
+
+  .update-time {
+    font-size: 11px;
+  }
+
+  /* 表格更紧凑 */
+  :deep(.el-table) {
+    font-size: 11px;
+  }
+
+  :deep(.el-table th) {
+    font-size: 11px;
+  }
+
+  :deep(.el-table .cell) {
+    padding: 6px 3px;
+  }
+
+  /* 小屏只显示核心列 */
+  :deep(.el-table .el-table__cell:nth-child(n + 5)) {
+    display: none;
+  }
+
+  :deep(.el-tag) {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
 }
 </style>

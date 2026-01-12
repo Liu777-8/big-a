@@ -93,15 +93,12 @@ onMounted(() => {
 }
 
 .main {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 40px 20px;
+  padding: 20px;
+  width: 100%;
 }
 
 .tabs-container {
   width: 100%;
-  max-width: 1400px;
 }
 
 .main-tabs {
@@ -116,7 +113,49 @@ onMounted(() => {
 }
 
 :deep(.el-tab-pane) {
-  display: flex;
-  justify-content: center;
+  width: 100%;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .main {
+    padding: 10px 5px;
+  }
+
+  .main-tabs {
+    border-radius: 8px;
+  }
+
+  :deep(.el-tabs__content) {
+    padding: 10px 5px;
+  }
+
+  :deep(.el-tabs__header) {
+    margin: 0;
+  }
+
+  :deep(.el-tabs__item) {
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  :deep(.el-tabs__nav-wrap) {
+    padding: 5px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .main {
+    padding: 5px 2px;
+  }
+
+  :deep(.el-tabs__content) {
+    padding: 8px 3px;
+  }
+
+  :deep(.el-tabs__item) {
+    padding: 0 8px;
+    font-size: 12px;
+  }
 }
 </style>
