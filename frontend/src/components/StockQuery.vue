@@ -951,6 +951,10 @@ const downloadExcel = async (days = 7) => {
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.06);
   text-align: center;
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .history-item-compact:hover {
