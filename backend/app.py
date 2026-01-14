@@ -5,6 +5,10 @@ from datetime import datetime, timedelta
 import pandas as pd
 from io import BytesIO
 import os
+import requests
+from bs4 import BeautifulSoup
+import random
+import time
 
 app = Flask(__name__)
 
@@ -84,24 +88,86 @@ def get_stock_info():
             print(f"基本信息获取失败: {e}")
             # 基本信息失败时返回空字典，继续尝试获取实时数据
         
-        # 2. 获取实时行情数据 - 使用单个股票查询避免超时
+        # 2. 获取最近两天的历史数据以及计算均线（使用类似下载接口的方法）
         try:
-            # 使用更轻量级的方法：获取单日历史数据作为实时数据
-            today = datetime.now().strftime('%Y%m%d')
-            yesterday = (datetime.now() - timedelta(days=3)).strftime('%Y%m%d')
+            # 获取最近20天的数据，确保能计算5日线和10日线（考虑周末和节假日）
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=20)
             
-            df_hist = ak.stock_zh_a_hist(
+            history_df = ak.stock_zh_a_hist(
                 symbol=stock_code,
                 period='daily',
-                start_date=yesterday,
-                end_date=today,
+                start_date=start_date.strftime('%Y%m%d'),
+                end_date=end_date.strftime('%Y%m%d'),
                 adjust=''
             )
             
-            if not df_hist.empty:
-                # 获取最新一条数据
-                latest = df_hist.iloc[-1].to_dict()
-                # 构造类似实时数据的格式
+            if not history_df.empty and len(history_df) >= 1:
+                # 获取最新一天数据（今日）
+                latest = history_df.iloc[-1].to_dict()
+                
+                # 计算5日均线和10日均线（包含今日收盘价）
+                # MA5 = (今日收盘 + 之前4天收盘) / 5
+                # MA10 = (今日收盘 + 之前9天收盘) / 10
+                ma5 = None
+                ma10 = None
+                if len(history_df) >= 5:  # 至少需要5天数据
+                    ma5 = history_df.tail(5)['收盘'].mean()
+                if len(history_df) >= 10:  # 至少需要10天数据
+                    ma10 = history_df.tail(10)['收盘'].mean()
+                
+                # 获取昨日数据（如果存在）
+                previous_data = None
+                if len(history_df) >= 2:
+                    previous = history_df.iloc[-2].to_dict()
+                    
+                    # 格式化日期（从 "2026-01-14" 转为 "2026年01月14日"）
+                    raw_date = previous.get('日期', '')
+                    formatted_date = raw_date
+                    if raw_date:
+                        try:
+                            date_obj = datetime.strptime(str(raw_date), '%Y-%m-%d')
+                            formatted_date = date_obj.strftime('%Y年%m月%d日')
+                        except:
+                            pass
+                    
+                    previous_data = {
+                        '昨日开盘': format_numeric_value(previous.get('开盘')),
+                        '昨日最高': format_numeric_value(previous.get('最高')),
+                        '昨日最低': format_numeric_value(previous.get('最低')),
+                        '昨日收盘': format_numeric_value(previous.get('收盘')),
+                        '昨日日期': formatted_date,
+                        '五日线': format_numeric_value(ma5) if ma5 else None,
+                        '十日线': format_numeric_value(ma10) if ma10 else None
+                    }
+                    
+                    # 计算今日实时价与昨日各价格的对比
+                    current_price = latest.get('收盘', 0)
+                    try:
+                        if current_price and previous.get('开盘'):
+                            vs_open = ((current_price - previous.get('开盘')) / previous.get('开盘')) * 100
+                            previous_data['相比昨日开盘涨跌幅'] = format_numeric_value(vs_open)
+                        if current_price and previous.get('最高'):
+                            vs_high = ((current_price - previous.get('最高')) / previous.get('最高')) * 100
+                            previous_data['相比昨日最高涨跌幅'] = format_numeric_value(vs_high)
+                        if current_price and previous.get('最低'):
+                            vs_low = ((current_price - previous.get('最低')) / previous.get('最低')) * 100
+                            previous_data['相比昨日最低涨跌幅'] = format_numeric_value(vs_low)
+                        if current_price and previous.get('收盘'):
+                            vs_close = ((current_price - previous.get('收盘')) / previous.get('收盘')) * 100
+                            previous_data['相比昨日收盘涨跌幅'] = format_numeric_value(vs_close)
+                        
+                        # 计算与5日线和10日线的对比
+                        if current_price and ma5:
+                            vs_ma5 = ((current_price - ma5) / ma5) * 100
+                            previous_data['相比五日线涨跌幅'] = format_numeric_value(vs_ma5)
+                        if current_price and ma10:
+                            vs_ma10 = ((current_price - ma10) / ma10) * 100
+                            previous_data['相比十日线涨跌幅'] = format_numeric_value(vs_ma10)
+                    except Exception as calc_e:
+                        print(f"计算涨跌幅失败: {calc_e}")
+                
+                # 构造实时数据格式
                 realtime_data = {
                     '代码': stock_code,
                     '名称': info_result.get('股票简称', stock_code),
@@ -116,9 +182,12 @@ def get_stock_info():
                     '今开': format_numeric_value(latest.get('开盘')),
                     '昨收': format_numeric_value(latest.get('昨收', latest.get('收盘'))),
                     '换手率': format_numeric_value(latest.get('换手率')),
+                    '昨日数据': previous_data
                 }
         except Exception as e:
             print(f"实时数据获取失败: {e}")
+            import traceback
+            traceback.print_exc()
             # 实时数据获取失败，保持为None
         
         # 如果两个数据都为空，返回错误
@@ -665,6 +734,98 @@ def download_limit_down_data():
             'success': False,
             'message': f'下载失败: {str(e)}'
         }), 400
+
+@app.route('/api/wallpapers', methods=['GET'])
+def get_wallpapers():
+    """
+    爬取壁纸，每次获取10张
+    """
+    try:
+        count = int(request.args.get('count', 10))  # 默认10张
+        wallpaper_urls = []
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        }
+        
+        # 爬取指定数量的壁纸
+        for i in range(count):
+            try:
+                # 每次请求都会返回一张随机壁纸
+                response = requests.get(
+                    'https://wallpaper.061129.xyz/desktop',
+                    headers=headers,
+                    timeout=10,
+                    allow_redirects=True
+                )
+                
+                if response.status_code == 200:
+                    # 解析HTML获取图片URL
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    
+                    # 查找图片标签 - 尝试多种可能的选择器
+                    img_tag = None
+                    
+                    # 尝试1: 查找主要图片
+                    img_tag = soup.find('img', class_='wallpaper-image') or \
+                             soup.find('img', id='wallpaper') or \
+                             soup.find('div', class_='wallpaper').find('img') if soup.find('div', class_='wallpaper') else None
+                    
+                    # 尝试2: 查找所有img标签，取第一个较大的图片
+                    if not img_tag:
+                        all_imgs = soup.find_all('img')
+                        for img in all_imgs:
+                            src = img.get('src', '')
+                            # 跳过小图标和logo
+                            if src and not any(x in src.lower() for x in ['icon', 'logo', 'avatar', 'favicon']):
+                                img_tag = img
+                                break
+                    
+                    # 尝试3: 检查是否页面本身就是图片
+                    if not img_tag and response.headers.get('Content-Type', '').startswith('image/'):
+                        # 直接返回当前URL
+                        wallpaper_urls.append(response.url)
+                    elif img_tag:
+                        img_url = img_tag.get('src') or img_tag.get('data-src')
+                        if img_url:
+                            # 处理相对URL
+                            if img_url.startswith('//'):
+                                img_url = 'https:' + img_url
+                            elif img_url.startswith('/'):
+                                img_url = 'https://wallpaper.061129.xyz' + img_url
+                            elif not img_url.startswith('http'):
+                                img_url = 'https://wallpaper.061129.xyz/' + img_url
+                            
+                            wallpaper_urls.append(img_url)
+                
+                # 添加短暂延迟避免请求过快
+                if i < count - 1:
+                    time.sleep(random.uniform(0.3, 0.8))
+                    
+            except Exception as e:
+                print(f'获取第 {i+1} 张壁纸失败: {str(e)}')
+                continue
+        
+        if not wallpaper_urls:
+            return jsonify({
+                'success': False,
+                'message': '未能获取到壁纸，请稍后重试'
+            }), 400
+        
+        return jsonify({
+            'success': True,
+            'count': len(wallpaper_urls),
+            'data': wallpaper_urls
+        })
+        
+    except Exception as e:
+        print(f'爬取壁纸失败: {str(e)}')
+        return jsonify({
+            'success': False,
+            'message': f'获取壁纸失败: {str(e)}'
+        }), 500
 
 if __name__ == '__main__':
     import os

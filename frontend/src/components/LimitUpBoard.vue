@@ -356,14 +356,10 @@ defineExpose({
 }
 
 .board-card {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.98) 0%,
-    rgba(255, 255, 255, 0.95) 100%
-  );
+  background: rgba(255, 255, 255, 0.75);
   border-radius: 16px;
-  border: 1px solid rgba(102, 126, 234, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
   transition: all 0.3s ease;
 }
 

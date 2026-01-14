@@ -54,176 +54,374 @@
         </el-form-item>
       </el-form>
 
-      <!-- 查询历史 -->
-      <div v-if="queryHistory.length > 0" class="query-history-section">
-        <div class="history-header">
-          <div class="history-title">
-            <el-icon class="clock-icon"><Clock /></el-icon>
-            <span>最近查询</span>
-          </div>
-          <el-button
-            type="danger"
-            size="small"
-            text
-            @click="clearHistory"
-            class="clear-btn"
-          >
-            <el-icon><Delete /></el-icon>
-            清空
-          </el-button>
-        </div>
-        <div class="history-list">
-          <div
-            v-for="item in queryHistory"
-            :key="item.code"
-            :class="['history-item', { active: form.stockCode === item.code }]"
-            @click="selectFromHistory(item)"
-          >
-            <div class="stock-info-badge">
-              <div class="stock-name">{{ item.name }}</div>
-              <div class="stock-code">{{ item.code }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- 加载骨架屏 -->
       <div v-if="loading" class="loading-skeleton">
         <el-skeleton :rows="8" animated />
       </div>
 
-      <!-- 查询结果 - 基本信息 -->
-      <div v-if="basicInfo && !loading" class="result-area">
-        <el-divider content-position="left">
-          <el-tag type="success" size="large">基本信息</el-tag>
-        </el-divider>
-
-        <div class="stock-info">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item
-              v-for="(value, key) in basicInfo"
-              :key="key"
-              :label="key"
-            >
-              {{ value }}
-            </el-descriptions-item>
-          </el-descriptions>
-        </div>
-      </div>
-
-      <!-- 实时数据 -->
+      <!-- 实时数据和最近查询 -->
       <div v-if="realtimeData && !loading" class="result-area">
-        <el-divider content-position="left">
-          <el-tag type="warning" size="large">实时行情数据</el-tag>
-        </el-divider>
-
-        <!-- 查询时间显示 -->
-        <div class="query-time-info" v-if="queryTime">
-          <el-icon class="clock-icon"><Clock /></el-icon>
-          <span>查询时间：{{ queryTime }}</span>
-        </div>
-
-        <div class="realtime-data">
-          <!-- 核心指标卡片 -->
-          <el-row :gutter="20" class="key-metrics">
-            <el-col :span="6">
-              <el-card shadow="hover" class="metric-card">
-                <div class="metric-label">股票代码</div>
-                <div class="metric-value">
-                  {{ realtimeData["代码"] || "-" }}
+        <el-row :gutter="20" class="realtime-and-history">
+          <!-- 左侧：最近查询 -->
+          <el-col :span="8" v-if="queryHistory.length > 0">
+            <div class="query-history-compact">
+              <div class="history-header">
+                <div class="history-title">
+                  <el-icon class="clock-icon"><Clock /></el-icon>
+                  <span>最近查询</span>
                 </div>
-              </el-card>
-            </el-col>
-            <el-col :span="6">
-              <el-card shadow="hover" class="metric-card">
-                <div class="metric-label">股票名称</div>
-                <div class="metric-value">
-                  {{ realtimeData["名称"] || "-" }}
-                </div>
-              </el-card>
-            </el-col>
-            <el-col :span="6">
-              <el-card shadow="hover" class="metric-card price-card">
-                <div class="metric-label">最新价</div>
-                <div
-                  class="metric-value price"
-                  :class="getPriceClass(realtimeData['涨跌幅'])"
+                <el-button
+                  type="danger"
+                  size="small"
+                  text
+                  @click="clearHistory"
+                  class="clear-btn"
                 >
-                  {{ realtimeData["最新价"] || "-" }}
-                </div>
-              </el-card>
-            </el-col>
-            <el-col :span="6">
-              <el-card shadow="hover" class="metric-card">
-                <div class="metric-label">涨跌幅</div>
+                  <el-icon><Delete /></el-icon>
+                  清空
+                </el-button>
+              </div>
+              <div class="history-grid">
                 <div
-                  class="metric-value"
-                  :class="getPriceClass(realtimeData['涨跌幅'])"
+                  v-for="(item, index) in displayHistory"
+                  :key="item.code"
+                  :class="[
+                    'history-item-compact',
+                    { active: form.stockCode === item.code },
+                  ]"
+                  @click="selectFromHistory(item)"
                 >
-                  {{ realtimeData["涨跌幅"] }}%
+                  <div class="stock-name-compact">{{ item.name }}</div>
+                  <div class="stock-code-compact">{{ item.code }}</div>
                 </div>
-              </el-card>
-            </el-col>
-          </el-row>
+              </div>
+            </div>
+          </el-col>
 
-          <!-- 详细数据表格 -->
-          <el-descriptions :column="3" border class="realtime-details">
-            <el-descriptions-item label="涨跌额">{{
-              realtimeData["涨跌额"] || "-"
-            }}</el-descriptions-item>
-            <el-descriptions-item label="成交量">{{
-              realtimeData["成交量"] || "-"
-            }}</el-descriptions-item>
-            <el-descriptions-item label="成交额">{{
-              realtimeData["成交额"] || "-"
-            }}</el-descriptions-item>
-            <el-descriptions-item label="振幅"
-              >{{ realtimeData["振幅"] || "-" }}%</el-descriptions-item
-            >
-            <el-descriptions-item label="换手率"
-              >{{ realtimeData["换手率"] || "-" }}%</el-descriptions-item
-            >
-            <el-descriptions-item label="市盈率">{{
-              realtimeData["市盈率-动态"] || "-"
-            }}</el-descriptions-item>
-            <el-descriptions-item label="最高">{{
-              realtimeData["最高"] || "-"
-            }}</el-descriptions-item>
-            <el-descriptions-item label="最低">{{
-              realtimeData["最低"] || "-"
-            }}</el-descriptions-item>
-            <el-descriptions-item label="今开">{{
-              realtimeData["今开"] || "-"
-            }}</el-descriptions-item>
-            <el-descriptions-item label="昨收">{{
-              realtimeData["昨收"] || "-"
-            }}</el-descriptions-item>
-            <el-descriptions-item label="量比">{{
-              realtimeData["量比"] || "-"
-            }}</el-descriptions-item>
-            <el-descriptions-item label="市净率">{{
-              realtimeData["市净率"] || "-"
-            }}</el-descriptions-item>
-            <el-descriptions-item label="总市值">{{
-              realtimeData["总市值"] || "-"
-            }}</el-descriptions-item>
-            <el-descriptions-item label="流通市值">{{
-              realtimeData["流通市值"] || "-"
-            }}</el-descriptions-item>
-            <el-descriptions-item label="60日涨跌幅"
-              >{{ realtimeData["60日涨跌幅"] || "-" }}%</el-descriptions-item
-            >
-            <el-descriptions-item label="年初至今涨跌幅"
-              >{{
-                realtimeData["年初至今涨跌幅"] || "-"
-              }}%</el-descriptions-item
-            >
-          </el-descriptions>
-        </div>
+          <!-- 右侧：实时行情数据 -->
+          <el-col :span="queryHistory.length > 0 ? 16 : 24">
+            <!-- 实时行情数据 -->
+            <el-divider content-position="left">
+              <el-tag type="warning" size="large">实时行情数据</el-tag>
+            </el-divider>
+            <!-- 昨日交易对比 -->
+            <div v-if="realtimeData.昨日数据">
+              <div class="yesterday-comparison">
+                <div class="comparison-date" v-if="queryTime">
+                  <el-icon><Calendar /></el-icon>
+                  <span>查询时间：{{ queryTime }}</span>
+                </div>
+
+                <el-row :gutter="20">
+                  <!-- 昨日开盘 -->
+                  <el-col :span="4">
+                    <el-card shadow="hover" class="comparison-card">
+                      <div class="card-title">昨日开盘价</div>
+                      <div class="card-value">
+                        {{ realtimeData.昨日数据.昨日开盘 || "-" }}
+                      </div>
+                      <div
+                        class="card-change"
+                        :class="
+                          getPriceClass(
+                            realtimeData.昨日数据.相比昨日开盘涨跌幅
+                          )
+                        "
+                        v-if="
+                          realtimeData.昨日数据.相比昨日开盘涨跌幅 !== undefined
+                        "
+                      >
+                        <el-icon
+                          v-if="realtimeData.昨日数据.相比昨日开盘涨跌幅 > 0"
+                          ><CaretTop
+                        /></el-icon>
+                        <el-icon
+                          v-else-if="
+                            realtimeData.昨日数据.相比昨日开盘涨跌幅 < 0
+                          "
+                          ><CaretBottom
+                        /></el-icon>
+                        <span
+                          >{{ realtimeData.昨日数据.相比昨日开盘涨跌幅 }}%</span
+                        >
+                      </div>
+                    </el-card>
+                  </el-col>
+
+                  <!-- 昨日最高 -->
+                  <el-col :span="4">
+                    <el-card shadow="hover" class="comparison-card">
+                      <div class="card-title">昨日最高价</div>
+                      <div class="card-value">
+                        {{ realtimeData.昨日数据.昨日最高 || "-" }}
+                      </div>
+                      <div
+                        class="card-change"
+                        :class="
+                          getPriceClass(
+                            realtimeData.昨日数据.相比昨日最高涨跌幅
+                          )
+                        "
+                        v-if="
+                          realtimeData.昨日数据.相比昨日最高涨跌幅 !== undefined
+                        "
+                      >
+                        <el-icon
+                          v-if="realtimeData.昨日数据.相比昨日最高涨跌幅 > 0"
+                          ><CaretTop
+                        /></el-icon>
+                        <el-icon
+                          v-else-if="
+                            realtimeData.昨日数据.相比昨日最高涨跌幅 < 0
+                          "
+                          ><CaretBottom
+                        /></el-icon>
+                        <span
+                          >{{ realtimeData.昨日数据.相比昨日最高涨跌幅 }}%</span
+                        >
+                      </div>
+                    </el-card>
+                  </el-col>
+
+                  <!-- 昨日最低 -->
+                  <el-col :span="4">
+                    <el-card shadow="hover" class="comparison-card">
+                      <div class="card-title">昨日最低价</div>
+                      <div class="card-value">
+                        {{ realtimeData.昨日数据.昨日最低 || "-" }}
+                      </div>
+                      <div
+                        class="card-change"
+                        :class="
+                          getPriceClass(
+                            realtimeData.昨日数据.相比昨日最低涨跌幅
+                          )
+                        "
+                        v-if="
+                          realtimeData.昨日数据.相比昨日最低涨跌幅 !== undefined
+                        "
+                      >
+                        <el-icon
+                          v-if="realtimeData.昨日数据.相比昨日最低涨跌幅 > 0"
+                          ><CaretTop
+                        /></el-icon>
+                        <el-icon
+                          v-else-if="
+                            realtimeData.昨日数据.相比昨日最低涨跌幅 < 0
+                          "
+                          ><CaretBottom
+                        /></el-icon>
+                        <span
+                          >{{ realtimeData.昨日数据.相比昨日最低涨跌幅 }}%</span
+                        >
+                      </div>
+                    </el-card>
+                  </el-col>
+
+                  <!-- 昨日收盘 -->
+                  <el-col :span="4">
+                    <el-card shadow="hover" class="comparison-card">
+                      <div class="card-title">昨日收盘价</div>
+                      <div class="card-value">
+                        {{ realtimeData.昨日数据.昨日收盘 || "-" }}
+                      </div>
+                      <div
+                        class="card-change"
+                        :class="
+                          getPriceClass(
+                            realtimeData.昨日数据.相比昨日收盘涨跌幅
+                          )
+                        "
+                        v-if="
+                          realtimeData.昨日数据.相比昨日收盘涨跌幅 !== undefined
+                        "
+                      >
+                        <el-icon
+                          v-if="realtimeData.昨日数据.相比昨日收盘涨跌幅 > 0"
+                          ><CaretTop
+                        /></el-icon>
+                        <el-icon
+                          v-else-if="
+                            realtimeData.昨日数据.相比昨日收盘涨跌幅 < 0
+                          "
+                          ><CaretBottom
+                        /></el-icon>
+                        <span
+                          >{{ realtimeData.昨日数据.相比昨日收盘涨跌幅 }}%</span
+                        >
+                      </div>
+                    </el-card>
+                  </el-col>
+
+                  <!-- 五日线 -->
+                  <el-col :span="4">
+                    <el-card shadow="hover" class="comparison-card ma-card">
+                      <div class="card-title">五日线 (MA5)</div>
+                      <div class="card-value">
+                        {{ realtimeData.昨日数据.五日线 || "-" }}
+                      </div>
+                      <div
+                        class="card-change"
+                        :class="
+                          getPriceClass(realtimeData.昨日数据.相比五日线涨跌幅)
+                        "
+                        v-if="
+                          realtimeData.昨日数据.相比五日线涨跌幅 !== undefined
+                        "
+                      >
+                        <el-icon
+                          v-if="realtimeData.昨日数据.相比五日线涨跌幅 > 0"
+                          ><CaretTop
+                        /></el-icon>
+                        <el-icon
+                          v-else-if="realtimeData.昨日数据.相比五日线涨跌幅 < 0"
+                          ><CaretBottom
+                        /></el-icon>
+                        <span
+                          >{{ realtimeData.昨日数据.相比五日线涨跌幅 }}%</span
+                        >
+                      </div>
+                    </el-card>
+                  </el-col>
+
+                  <!-- 十日线 -->
+                  <el-col :span="4">
+                    <el-card shadow="hover" class="comparison-card ma-card">
+                      <div class="card-title">十日线 (MA10)</div>
+                      <div class="card-value">
+                        {{ realtimeData.昨日数据.十日线 || "-" }}
+                      </div>
+                      <div
+                        class="card-change"
+                        :class="
+                          getPriceClass(realtimeData.昨日数据.相比十日线涨跌幅)
+                        "
+                        v-if="
+                          realtimeData.昨日数据.相比十日线涨跌幅 !== undefined
+                        "
+                      >
+                        <el-icon
+                          v-if="realtimeData.昨日数据.相比十日线涨跌幅 > 0"
+                          ><CaretTop
+                        /></el-icon>
+                        <el-icon
+                          v-else-if="realtimeData.昨日数据.相比十日线涨跌幅 < 0"
+                          ><CaretBottom
+                        /></el-icon>
+                        <span
+                          >{{ realtimeData.昨日数据.相比十日线涨跌幅 }}%</span
+                        >
+                      </div>
+                    </el-card>
+                  </el-col>
+                </el-row>
+              </div>
+            </div>
+            <div class="realtime-data">
+              <!-- 核心指标卡片 -->
+              <el-row :gutter="20" class="key-metrics">
+                <el-col :span="6">
+                  <el-card shadow="hover" class="metric-card">
+                    <div class="metric-label">股票代码</div>
+                    <div class="metric-value">
+                      {{ realtimeData["代码"] || "-" }}
+                    </div>
+                  </el-card>
+                </el-col>
+                <el-col :span="6">
+                  <el-card shadow="hover" class="metric-card">
+                    <div class="metric-label">股票名称</div>
+                    <div class="metric-value">
+                      {{ realtimeData["名称"] || "-" }}
+                    </div>
+                  </el-card>
+                </el-col>
+                <el-col :span="6">
+                  <el-card shadow="hover" class="metric-card price-card">
+                    <div class="metric-label">最新价</div>
+                    <div
+                      class="metric-value price"
+                      :class="getPriceClass(realtimeData['涨跌幅'])"
+                    >
+                      {{ realtimeData["最新价"] || "-" }}
+                    </div>
+                  </el-card>
+                </el-col>
+                <el-col :span="6">
+                  <el-card shadow="hover" class="metric-card">
+                    <div class="metric-label">涨跌幅</div>
+                    <div
+                      class="metric-value"
+                      :class="getPriceClass(realtimeData['涨跌幅'])"
+                    >
+                      {{ realtimeData["涨跌幅"] }}%
+                    </div>
+                  </el-card>
+                </el-col>
+              </el-row>
+
+              <!-- 详细数据表格 -->
+              <el-descriptions :column="3" border class="realtime-details">
+                <el-descriptions-item label="涨跌额">{{
+                  realtimeData["涨跌额"] || "-"
+                }}</el-descriptions-item>
+                <el-descriptions-item label="成交量">{{
+                  realtimeData["成交量"] || "-"
+                }}</el-descriptions-item>
+                <el-descriptions-item label="成交额">{{
+                  realtimeData["成交额"] || "-"
+                }}</el-descriptions-item>
+                <el-descriptions-item label="振幅"
+                  >{{ realtimeData["振幅"] || "-" }}%</el-descriptions-item
+                >
+                <el-descriptions-item label="换手率"
+                  >{{ realtimeData["换手率"] || "-" }}%</el-descriptions-item
+                >
+                <el-descriptions-item label="市盈率">{{
+                  realtimeData["市盈率-动态"] || "-"
+                }}</el-descriptions-item>
+                <el-descriptions-item label="最高">{{
+                  realtimeData["最高"] || "-"
+                }}</el-descriptions-item>
+                <el-descriptions-item label="最低">{{
+                  realtimeData["最低"] || "-"
+                }}</el-descriptions-item>
+                <el-descriptions-item label="今开">{{
+                  realtimeData["今开"] || "-"
+                }}</el-descriptions-item>
+                <el-descriptions-item label="昨收">{{
+                  realtimeData["昨收"] || "-"
+                }}</el-descriptions-item>
+                <el-descriptions-item label="量比">{{
+                  realtimeData["量比"] || "-"
+                }}</el-descriptions-item>
+                <el-descriptions-item label="市净率">{{
+                  realtimeData["市净率"] || "-"
+                }}</el-descriptions-item>
+                <el-descriptions-item label="总市值">{{
+                  realtimeData["总市值"] || "-"
+                }}</el-descriptions-item>
+                <el-descriptions-item label="流通市值">{{
+                  realtimeData["流通市值"] || "-"
+                }}</el-descriptions-item>
+                <el-descriptions-item label="60日涨跌幅"
+                  >{{
+                    realtimeData["60日涨跌幅"] || "-"
+                  }}%</el-descriptions-item
+                >
+                <el-descriptions-item label="年初至今涨跌幅"
+                  >{{
+                    realtimeData["年初至今涨跌幅"] || "-"
+                  }}%</el-descriptions-item
+                >
+              </el-descriptions>
+            </div>
+          </el-col>
+        </el-row>
       </div>
 
-      <!-- 历史数据查询区域 -->
-      <div v-if="basicInfo && !loading" class="history-query-area">
+      <!-- 历史数据查询区域 - 已隐藏 -->
+      <div v-if="false" class="history-query-area">
         <el-divider content-position="left">
           <el-tag type="info" size="large">历史数据查询</el-tag>
         </el-divider>
@@ -336,9 +534,18 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted, onMounted } from "vue";
+import { ref, onUnmounted, onMounted, computed } from "vue";
 import { ElMessage } from "element-plus";
-import { Search, Download, Clock, Delete } from "@element-plus/icons-vue";
+import {
+  Search,
+  Download,
+  Clock,
+  Delete,
+  Calendar,
+  CaretTop,
+  CaretBottom,
+  InfoFilled,
+} from "@element-plus/icons-vue";
 import axios from "axios";
 
 const form = ref({
@@ -353,6 +560,11 @@ const queryTime = ref(""); // 查询时间
 // 查询历史记录
 const queryHistory = ref([]);
 const MAX_HISTORY = 20; // 最多保存20条历史记录
+
+// 显示的历史记录（最多15个，5行×3列）
+const displayHistory = computed(() => {
+  return queryHistory.value.slice(0, 15);
+});
 
 // 自动刷新相关
 const autoRefresh = ref(false);
@@ -663,30 +875,136 @@ const downloadExcel = async (days = 7) => {
 }
 
 .query-card {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.98) 0%,
-    rgba(255, 255, 255, 0.95) 100%
-  );
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 20px;
   overflow: hidden;
-  border: 1px solid rgba(102, 126, 234, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.15);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .query-card:hover {
-  box-shadow: 0 12px 48px rgba(102, 126, 234, 0.15);
-  transform: translateY(-2px);
+  box-shadow: 0 15px 60px rgba(102, 126, 234, 0.18);
+  transform: translateY(-4px);
 }
 
 .card-header {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 800;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-header::before {
+  content: "📊";
+  font-size: 28px;
+  filter: drop-shadow(0 2px 4px rgba(102, 126, 234, 0.3));
+}
+
+/* 实时数据和最近查询并排布局 */
+.realtime-and-history {
+  margin-top: 20px;
+}
+
+/* 最近查询紧凑布局 */
+.query-history-compact {
+  background: linear-gradient(
+    135deg,
+    rgba(236, 245, 255, 0.95) 0%,
+    rgba(245, 247, 250, 0.95) 100%
+  );
+  border-radius: 18px;
+  border: 2px solid rgba(102, 126, 234, 0.15);
+  box-shadow: 0 6px 24px rgba(102, 126, 234, 0.08);
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(10px);
+}
+
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 15px;
+  background: white;
+  overflow-y: auto;
+  flex: 1;
+  max-height: 600px;
+}
+
+.history-item-compact {
+  padding: 12px 10px;
+  background: white;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(102, 126, 234, 0.08);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.06);
+  text-align: center;
+}
+
+.history-item-compact:hover {
+  border-color: rgba(102, 126, 234, 0.5);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.2);
+  transform: translateY(-3px) scale(1.02);
+  background: linear-gradient(135deg, #ecf5ff 0%, #f5f7fa 100%);
+}
+
+.history-item-compact.active {
+  border-color: #409eff;
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.15) 0%,
+    rgba(118, 75, 162, 0.15) 100%
+  );
+  box-shadow: 0 6px 24px rgba(102, 126, 234, 0.35);
+  transform: scale(1.03);
+}
+
+.history-item-compact.active::after {
+  content: "✓";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  background: #67c23a;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.stock-name-compact {
+  font-size: 13px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 4px;
+}
+
+.stock-code-compact {
+  font-size: 11px;
+  font-weight: 500;
+  color: #909399;
+  font-family: "Courier New", monospace;
+  letter-spacing: 0.3px;
 }
 
 /* 查询历史样式 */
@@ -837,6 +1155,115 @@ const downloadExcel = async (days = 7) => {
   letter-spacing: 0.5px;
 }
 
+.yesterday-comparison {
+  padding: 20px 0 10px 0;
+}
+
+.comparison-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: linear-gradient(
+    135deg,
+    rgba(103, 194, 58, 0.08) 0%,
+    rgba(103, 194, 58, 0.05) 100%
+  );
+  border-radius: 8px;
+  border-left: 4px solid #67c23a;
+  font-size: 14px;
+  color: #606266;
+  font-weight: 600;
+}
+
+.comparison-cards {
+  margin-bottom: 20px;
+}
+
+.comparison-card {
+  text-align: center;
+  padding: 24px 18px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+  border: 2px solid rgba(103, 194, 58, 0.2);
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(240, 249, 235, 0.8) 100%
+  );
+  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.08);
+}
+
+.comparison-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(103, 194, 58, 0.25);
+  border-color: rgba(103, 194, 58, 0.5);
+}
+
+.comparison-card.ma-card {
+  border-color: rgba(64, 158, 255, 0.2);
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(236, 245, 255, 0.8) 100%
+  );
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.08);
+}
+
+.comparison-card.ma-card:hover {
+  border-color: rgba(64, 158, 255, 0.5);
+  box-shadow: 0 12px 32px rgba(64, 158, 255, 0.25);
+}
+
+.comparison-card .card-title {
+  font-size: 14px;
+  color: #606266;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.comparison-card .card-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #303133;
+  margin-bottom: 10px;
+}
+
+.comparison-card .card-change {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.comparison-card .card-change .el-icon {
+  font-size: 18px;
+}
+
+.comparison-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(64, 158, 255, 0.08) 0%,
+    rgba(64, 158, 255, 0.05) 100%
+  );
+  border-radius: 8px;
+  font-size: 14px;
+  color: #409eff;
+  font-weight: 500;
+}
+
+.no-yesterday-data {
+  padding: 20px 0;
+}
+
 .result-area {
   margin-top: 30px;
 }
@@ -883,14 +1310,18 @@ const downloadExcel = async (days = 7) => {
 
 .metric-card {
   text-align: center;
-  padding: 15px 10px;
-  transition: all 0.3s ease;
-  border-radius: 12px;
+  padding: 20px 15px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+  border: 2px solid rgba(102, 126, 234, 0.1);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.08);
 }
 
 .metric-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.15);
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.3);
 }
 
 .metric-label {
@@ -997,23 +1428,41 @@ const downloadExcel = async (days = 7) => {
 }
 
 :deep(.el-input__wrapper) {
-  border-radius: 8px;
+  border-radius: 12px;
   transition: all 0.3s ease;
+  border: 2px solid rgba(102, 126, 234, 0.1);
 }
 
 :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.15);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.25);
+  border-color: #409eff;
 }
 
 :deep(.el-button) {
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 600;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 10px 20px;
 }
 
 :deep(.el-button:hover) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, #409eff 0%, #667eea 100%);
+  border: none;
+}
+
+:deep(.el-button--success) {
+  background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
+  border: none;
 }
 
 :deep(.el-date-editor) {
@@ -1040,6 +1489,40 @@ const downloadExcel = async (days = 7) => {
     font-size: 13px;
   }
 
+  /* 昨日对比卡片改为2列 */
+  .comparison-cards :deep(.el-col) {
+    width: 33.33% !important;
+    max-width: 33.33% !important;
+    flex: 0 0 33.33% !important;
+    margin-bottom: 12px;
+  }
+
+  .comparison-card {
+    padding: 15px 10px;
+  }
+
+  .comparison-card .card-title {
+    font-size: 11px;
+  }
+
+  .comparison-card .card-value {
+    font-size: 18px;
+  }
+
+  .comparison-card .card-change {
+    font-size: 13px;
+  }
+
+  .comparison-date {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+
+  .comparison-note {
+    font-size: 13px;
+    padding: 10px;
+  }
+
   :deep(.el-input__inner) {
     font-size: 14px;
   }
@@ -1047,6 +1530,37 @@ const downloadExcel = async (days = 7) => {
   :deep(.el-button) {
     padding: 8px 12px;
     font-size: 13px;
+  }
+
+  /* 查询历史网格适配 - 紧凑布局 */
+  .history-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .history-item-compact {
+    padding: 8px 6px;
+  }
+
+  .stock-name-compact {
+    font-size: 12px;
+  }
+
+  .stock-code-compact {
+    font-size: 10px;
+  }
+
+  /* 实时和历史并排布局在移动端改为堆叠 */
+  .realtime-and-history :deep(.el-col) {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    margin-bottom: 15px;
+  }
+
+  .query-history-compact {
+    margin-bottom: 20px;
   }
 
   /* 查询历史网格适配 */
@@ -1163,6 +1677,25 @@ const downloadExcel = async (days = 7) => {
     font-size: 16px;
   }
 
+  /* 紧凑历史网格改为单列 */
+  .history-grid {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    padding: 8px;
+  }
+
+  .history-item-compact {
+    padding: 8px 6px;
+  }
+
+  .stock-name-compact {
+    font-size: 11px;
+  }
+
+  .stock-code-compact {
+    font-size: 9px;
+  }
+
   /* 查询历史改为单列 */
   .history-list {
     grid-template-columns: 1fr;
@@ -1175,6 +1708,26 @@ const downloadExcel = async (days = 7) => {
   }
 
   .history-title {
+    font-size: 14px;
+  }
+
+  /* 昨日对比卡片改为单列 */
+  .comparison-cards :deep(.el-col) {
+    width: 50% !important;
+    max-width: 50% !important;
+    flex: 0 0 50% !important;
+    margin-bottom: 10px;
+  }
+
+  .comparison-card .card-title {
+    font-size: 12px;
+  }
+
+  .comparison-card .card-value {
+    font-size: 20px;
+  }
+
+  .comparison-card .card-change {
     font-size: 14px;
   }
 

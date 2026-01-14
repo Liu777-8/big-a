@@ -18,6 +18,9 @@
             <el-tab-pane label="强势股票" name="strong">
               <StrongStocks ref="strongStocksRef" />
             </el-tab-pane>
+            <el-tab-pane label="壁纸页面" name="test">
+              <TestPage />
+            </el-tab-pane>
           </el-tabs>
         </div>
       </el-main>
@@ -30,6 +33,7 @@ import { ref, watch, onMounted } from "vue";
 import StockQuery from "./components/StockQuery.vue";
 import LimitUpBoard from "./components/LimitUpBoard.vue";
 import StrongStocks from "./components/StrongStocks.vue";
+import TestPage from "./components/TestPage.vue";
 
 const activeTab = ref("stock");
 const limitUpBoardRef = ref(null);
@@ -72,48 +76,57 @@ onMounted(() => {
   font-family: "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
   min-height: 100vh;
-  background-size: 200% 200%;
-  animation: gradientShift 15s ease infinite;
-}
-
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+  position: relative;
+  background-image: url("./卧室氛围-女性魅力.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 .container {
   min-height: 100vh;
+  background: transparent;
 }
 
 .main {
   padding: 20px;
   width: 100%;
+  background: transparent;
 }
 
 .tabs-container {
   width: 100%;
+  height: 100%;
+  background: transparent;
 }
 
 .main-tabs {
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 12px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+:deep(.el-tabs__header) {
+  background: transparent;
+}
+
+:deep(.el-tabs__nav) {
+  background: transparent;
 }
 
 :deep(.el-tabs__content) {
   padding: 20px;
+  background: transparent;
 }
 
 :deep(.el-tab-pane) {
   width: 100%;
+  height: 100%;
+  background: transparent;
 }
 
 /* 移动端适配 */
