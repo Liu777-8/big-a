@@ -360,65 +360,231 @@
                 </el-col>
               </el-row>
 
-              <!-- 详细数据表格 -->
-              <el-descriptions :column="3" border class="realtime-details">
-                <el-descriptions-item label="涨跌额">{{
-                  realtimeData["涨跌额"] || "-"
-                }}</el-descriptions-item>
-                <el-descriptions-item label="成交量">{{
-                  realtimeData["成交量"] || "-"
-                }}</el-descriptions-item>
-                <el-descriptions-item label="成交额">{{
-                  realtimeData["成交额"] || "-"
-                }}</el-descriptions-item>
-                <el-descriptions-item label="振幅"
-                  >{{ realtimeData["振幅"] || "-" }}%</el-descriptions-item
+              <!-- 技术指标 -->
+              <div
+                v-if="
+                  realtimeData.MACD || realtimeData.KDJ || realtimeData.BOLL
+                "
+                class="tech-indicators-section"
+              >
+                <el-divider content-position="left">
+                  <el-tag type="info" size="large">技术指标</el-tag>
+                </el-divider>
+
+                <!-- 技术分析建议 -->
+                <el-card
+                  v-if="realtimeData.技术分析"
+                  shadow="always"
+                  class="analysis-card"
+                  :class="getAnalysisCardClass()"
                 >
-                <el-descriptions-item label="换手率"
-                  >{{ realtimeData["换手率"] || "-" }}%</el-descriptions-item
+                  <div class="analysis-header">
+                    <el-icon class="analysis-icon"><TrendCharts /></el-icon>
+                    <span class="analysis-title">AI技术分析</span>
+                    <div class="score-display" :class="getScoreClass()">
+                      <span class="score-label">综合评分</span>
+                      <span class="score-value">{{
+                        realtimeData.技术分析.综合评分
+                      }}</span>
+                    </div>
+                  </div>
+
+                  <div class="analysis-advice">
+                    <el-text
+                      class="advice-text"
+                      size="large"
+                      :type="getAdviceType()"
+                    >
+                      {{ realtimeData.技术分析.操作建议 }}
+                    </el-text>
+                  </div>
+
+                  <div class="analysis-signals">
+                    <el-tag
+                      v-for="(signal, index) in realtimeData.技术分析.信号"
+                      :key="index"
+                      :type="getSignalType(signal)"
+                      effect="dark"
+                      class="signal-tag"
+                    >
+                      {{ signal }}
+                    </el-tag>
+                  </div>
+                </el-card>
+
+                <el-row :gutter="20" class="indicators-row">
+                  <!-- MACD指标 -->
+                  <el-col :span="8" v-if="realtimeData.MACD">
+                    <el-card shadow="hover" class="indicator-card macd-card">
+                      <div class="indicator-header">
+                        <span class="indicator-name">MACD</span>
+                        <span class="indicator-desc">平滑异同移动平均线</span>
+                      </div>
+                      <div class="indicator-values">
+                        <div class="indicator-item">
+                          <span class="item-label">DIF:</span>
+                          <span
+                            class="item-value"
+                            :class="getMacdValueClass(realtimeData.MACD.DIF)"
+                          >
+                            {{ realtimeData.MACD.DIF || "-" }}
+                          </span>
+                        </div>
+                        <div class="indicator-item">
+                          <span class="item-label">DEA:</span>
+                          <span
+                            class="item-value"
+                            :class="getMacdValueClass(realtimeData.MACD.DEA)"
+                          >
+                            {{ realtimeData.MACD.DEA || "-" }}
+                          </span>
+                        </div>
+                        <div class="indicator-item">
+                          <span class="item-label">MACD:</span>
+                          <span
+                            class="item-value"
+                            :class="getMacdValueClass(realtimeData.MACD.MACD)"
+                          >
+                            {{ realtimeData.MACD.MACD || "-" }}
+                          </span>
+                        </div>
+                      </div>
+                    </el-card>
+                  </el-col>
+
+                  <!-- KDJ指标 -->
+                  <el-col :span="8" v-if="realtimeData.KDJ">
+                    <el-card shadow="hover" class="indicator-card kdj-card">
+                      <div class="indicator-header">
+                        <span class="indicator-name">KDJ</span>
+                        <span class="indicator-desc">随机指标</span>
+                      </div>
+                      <div class="indicator-values">
+                        <div class="indicator-item">
+                          <span class="item-label">K:</span>
+                          <span class="item-value">{{
+                            realtimeData.KDJ.K || "-"
+                          }}</span>
+                        </div>
+                        <div class="indicator-item">
+                          <span class="item-label">D:</span>
+                          <span class="item-value">{{
+                            realtimeData.KDJ.D || "-"
+                          }}</span>
+                        </div>
+                        <div class="indicator-item">
+                          <span class="item-label">J:</span>
+                          <span class="item-value" :class="getKdjJValueClass()">
+                            {{ realtimeData.KDJ.J || "-" }}
+                          </span>
+                        </div>
+                      </div>
+                    </el-card>
+                  </el-col>
+
+                  <!-- BOLL指标 -->
+                  <el-col :span="8" v-if="realtimeData.BOLL">
+                    <el-card shadow="hover" class="indicator-card boll-card">
+                      <div class="indicator-header">
+                        <span class="indicator-name">BOLL</span>
+                        <span class="indicator-desc">布林带</span>
+                      </div>
+                      <div class="indicator-values">
+                        <div class="indicator-item">
+                          <span class="item-label">上轨:</span>
+                          <span class="item-value">{{
+                            realtimeData.BOLL.UPPER || "-"
+                          }}</span>
+                        </div>
+                        <div class="indicator-item">
+                          <span class="item-label">中轨:</span>
+                          <span class="item-value">{{
+                            realtimeData.BOLL.MIDDLE || "-"
+                          }}</span>
+                        </div>
+                        <div class="indicator-item">
+                          <span class="item-label">下轨:</span>
+                          <span class="item-value">{{
+                            realtimeData.BOLL.LOWER || "-"
+                          }}</span>
+                        </div>
+                      </div>
+                    </el-card>
+                  </el-col>
+                </el-row>
+              </div>
+
+              <!-- 股票新闻资讯 -->
+              <div
+                v-if="stockNews && stockNews.length > 0"
+                class="stock-news-section"
+              >
+                <el-divider content-position="left">
+                  <el-tag type="success" size="large">最新资讯</el-tag>
+                </el-divider>
+
+                <!-- 最新一条新闻 -->
+                <el-card
+                  shadow="hover"
+                  class="news-card latest-news"
+                  @click="showAllNews"
                 >
-                <el-descriptions-item label="市盈率">{{
-                  realtimeData["市盈率-动态"] || "-"
-                }}</el-descriptions-item>
-                <el-descriptions-item label="最高">{{
-                  realtimeData["最高"] || "-"
-                }}</el-descriptions-item>
-                <el-descriptions-item label="最低">{{
-                  realtimeData["最低"] || "-"
-                }}</el-descriptions-item>
-                <el-descriptions-item label="今开">{{
-                  realtimeData["今开"] || "-"
-                }}</el-descriptions-item>
-                <el-descriptions-item label="昨收">{{
-                  realtimeData["昨收"] || "-"
-                }}</el-descriptions-item>
-                <el-descriptions-item label="量比">{{
-                  realtimeData["量比"] || "-"
-                }}</el-descriptions-item>
-                <el-descriptions-item label="市净率">{{
-                  realtimeData["市净率"] || "-"
-                }}</el-descriptions-item>
-                <el-descriptions-item label="总市值">{{
-                  realtimeData["总市值"] || "-"
-                }}</el-descriptions-item>
-                <el-descriptions-item label="流通市值">{{
-                  realtimeData["流通市值"] || "-"
-                }}</el-descriptions-item>
-                <el-descriptions-item label="60日涨跌幅"
-                  >{{
-                    realtimeData["60日涨跌幅"] || "-"
-                  }}%</el-descriptions-item
-                >
-                <el-descriptions-item label="年初至今涨跌幅"
-                  >{{
-                    realtimeData["年初至今涨跌幅"] || "-"
-                  }}%</el-descriptions-item
-                >
-              </el-descriptions>
+                  <div class="news-header">
+                    <span class="news-badge">最新</span>
+                    <span class="news-time">{{ stockNews[0].发布时间 }}</span>
+                  </div>
+                  <div class="news-title">{{ stockNews[0].标题 }}</div>
+                  <div class="news-content">{{ stockNews[0].内容 }}</div>
+                  <div class="news-footer">
+                    <span class="news-source">{{ stockNews[0].来源 }}</span>
+                    <el-button type="primary" text size="small">
+                      查看全部资讯 ({{ stockNews.length }})
+                      <el-icon><ArrowRight /></el-icon>
+                    </el-button>
+                  </div>
+                </el-card>
+              </div>
             </div>
           </el-col>
         </el-row>
       </div>
+
+      <!-- 新闻弹窗 -->
+      <el-dialog
+        v-model="newsDialogVisible"
+        title="股票资讯"
+        width="70%"
+        :close-on-click-modal="false"
+      >
+        <div class="news-list">
+          <el-card
+            v-for="(news, index) in stockNews"
+            :key="index"
+            shadow="hover"
+            class="news-item-card"
+          >
+            <div class="news-item-header">
+              <span class="news-item-badge">{{ index + 1 }}</span>
+              <span class="news-item-time">{{ news.发布时间 }}</span>
+            </div>
+            <div class="news-item-title">{{ news.标题 }}</div>
+            <div class="news-item-content">{{ news.内容 }}</div>
+            <div class="news-item-footer">
+              <span class="news-item-source">来源: {{ news.来源 }}</span>
+              <el-button
+                v-if="news.链接"
+                type="primary"
+                link
+                size="small"
+                @click="openNewsLink(news.链接)"
+              >
+                查看原文
+                <el-icon><Link /></el-icon>
+              </el-button>
+            </div>
+          </el-card>
+        </div>
+      </el-dialog>
 
       <!-- 历史数据查询区域 - 已隐藏 -->
       <div v-if="false" class="history-query-area">
@@ -545,6 +711,8 @@ import {
   CaretTop,
   CaretBottom,
   InfoFilled,
+  ArrowRight,
+  Link,
 } from "@element-plus/icons-vue";
 import axios from "axios";
 
@@ -582,6 +750,10 @@ const historyForm = ref({
 
 const historyData = ref(null);
 const historyLoading = ref(false);
+
+// 股票新闻相关
+const stockNews = ref([]);
+const newsDialogVisible = ref(false);
 
 // 查询股票基本信息和实时数据
 const queryStock = async () => {
@@ -632,6 +804,9 @@ const queryStock = async () => {
 
       historyForm.value.endDate = formatDate(today);
       historyForm.value.startDate = formatDate(lastYear);
+
+      // 查询股票新闻
+      fetchStockNews();
     } else {
       ElMessage.error(response.data.message || "查询失败");
     }
@@ -690,6 +865,48 @@ const formatDate = (date) => {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}${month}${day}`;
+};
+
+// 获取股票新闻
+const fetchStockNews = async () => {
+  if (!form.value.stockCode) return;
+
+  try {
+    const response = await axios.get("/api/stock/news", {
+      params: { code: form.value.stockCode },
+    });
+
+    if (response.data.success) {
+      stockNews.value = response.data.data;
+    } else {
+      stockNews.value = [];
+      console.log("获取新闻失败:", response.data.message);
+    }
+  } catch (error) {
+    console.error("获取股票新闻失败:", error);
+    stockNews.value = [];
+  }
+};
+
+// 显示所有新闻
+const showAllNews = () => {
+  newsDialogVisible.value = true;
+};
+
+// 打开新闻链接
+const openNewsLink = (url) => {
+  if (url) {
+    window.open(url, "_blank");
+  }
+};
+
+// 判断技术指标值的颜色
+const getValueClass = (value) => {
+  if (!value) return "";
+  const num = parseFloat(value);
+  if (num > 0) return "positive-value";
+  if (num < 0) return "negative-value";
+  return "";
 };
 
 // 判断涨跌颜色
@@ -866,6 +1083,88 @@ const downloadExcel = async (days = 7) => {
     console.error("下载失败:", error);
     ElMessage.error(error.response?.data?.message || "下载失败，请稍后重试");
   }
+};
+
+// 获取分析卡片类名（根据评分）
+const getAnalysisCardClass = () => {
+  if (!realtimeData.value?.技术分析) return "";
+  const score = realtimeData.value.技术分析.综合评分;
+  if (score >= 2) return "analysis-bullish";
+  if (score <= -2) return "analysis-bearish";
+  return "analysis-neutral";
+};
+
+// 获取评分标签类型
+const getScoreTagType = () => {
+  if (!realtimeData.value?.技术分析) return "info";
+  const score = realtimeData.value.技术分析.综合评分;
+  if (score >= 4) return "success";
+  if (score >= 2) return "";
+  if (score >= -1) return "info";
+  if (score >= -3) return "warning";
+  return "danger";
+};
+
+// 获取建议文本类型
+const getAdviceType = () => {
+  if (!realtimeData.value?.技术分析) return "info";
+  const score = realtimeData.value.技术分析.综合评分;
+  if (score >= 2) return "success";
+  if (score >= -1) return "info";
+  return "danger";
+};
+
+// 获取信号标签类型
+const getSignalType = (signal) => {
+  if (
+    signal.includes("金叉") ||
+    signal.includes("超卖") ||
+    signal.includes("反弹")
+  ) {
+    return "success";
+  }
+  if (
+    signal.includes("死叉") ||
+    signal.includes("超买") ||
+    signal.includes("回调")
+  ) {
+    return "danger";
+  }
+  if (signal.includes("多头") || signal.includes("强势")) {
+    return "success";
+  }
+  if (signal.includes("空头")) {
+    return "danger";
+  }
+  return "info";
+};
+
+// 获取评分显示类名
+const getScoreClass = () => {
+  if (!realtimeData.value?.技术分析) return "";
+  const score = realtimeData.value.技术分析.综合评分;
+  if (score >= 4) return "score-very-bullish";
+  if (score >= 2) return "score-bullish";
+  if (score >= -1) return "score-neutral";
+  if (score >= -3) return "score-bearish";
+  return "score-very-bearish";
+};
+
+// MACD值颜色（正数红色，负数绿色）
+const getMacdValueClass = (value) => {
+  if (value === null || value === undefined || value === "-") return "";
+  const num = parseFloat(value);
+  if (isNaN(num)) return "";
+  return num > 0 ? "positive-value" : num < 0 ? "negative-value" : "";
+};
+
+// KDJ的J值颜色（J>D红色，J<D绿色）
+const getKdjJValueClass = () => {
+  if (!realtimeData.value?.KDJ) return "";
+  const j = parseFloat(realtimeData.value.KDJ.J);
+  const d = parseFloat(realtimeData.value.KDJ.D);
+  if (isNaN(j) || isNaN(d)) return "";
+  return j > d ? "positive-value" : j < d ? "negative-value" : "";
 };
 </script>
 
@@ -1475,6 +1774,436 @@ const downloadExcel = async (days = 7) => {
 
 :deep(.metric-card .el-card__body) {
   padding: 15px 10px;
+}
+
+/* 技术指标样式 */
+.tech-indicators-section {
+  margin-top: 25px;
+}
+
+/* 技术分析卡片 */
+.analysis-card {
+  margin-bottom: 20px;
+  border: 2px solid #e4e7ed;
+  transition: all 0.3s;
+}
+
+.analysis-card.analysis-bullish {
+  border-color: rgba(103, 194, 58, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(103, 194, 58, 0.05) 0%,
+    rgba(103, 194, 58, 0.02) 100%
+  );
+}
+
+.analysis-card.analysis-bearish {
+  border-color: rgba(245, 108, 108, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(245, 108, 108, 0.05) 0%,
+    rgba(245, 108, 108, 0.02) 100%
+  );
+}
+
+.analysis-card.analysis-neutral {
+  border-color: rgba(144, 147, 153, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(144, 147, 153, 0.05) 0%,
+    rgba(144, 147, 153, 0.02) 100%
+  );
+}
+
+.analysis-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e4e7ed;
+}
+
+.analysis-icon {
+  font-size: 24px;
+  color: #409eff;
+}
+
+.analysis-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #303133;
+  flex: 1;
+}
+
+.score-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.score-label {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 2px;
+}
+
+.score-value {
+  font-size: 32px;
+  font-weight: 900;
+  font-family: "Arial Black", sans-serif;
+  line-height: 1;
+}
+
+.score-display.score-very-bullish {
+  background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
+  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.4);
+}
+
+.score-display.score-very-bullish .score-label,
+.score-display.score-very-bullish .score-value {
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.score-display.score-bullish {
+  background: linear-gradient(135deg, #95d475 0%, #b3e19d 100%);
+}
+
+.score-display.score-bullish .score-label {
+  color: #529b2e;
+}
+
+.score-display.score-bullish .score-value {
+  color: #409eff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.score-display.score-neutral {
+  background: linear-gradient(135deg, #e4e7ed 0%, #f2f6fc 100%);
+}
+
+.score-display.score-neutral .score-label,
+.score-display.score-neutral .score-value {
+  color: #606266;
+}
+
+.score-display.score-bearish {
+  background: linear-gradient(135deg, #f5a2a2 0%, #f8c0c0 100%);
+}
+
+.score-display.score-bearish .score-label {
+  color: #c45656;
+}
+
+.score-display.score-bearish .score-value {
+  color: #f56c6c;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.score-display.score-very-bearish {
+  background: linear-gradient(135deg, #f56c6c 0%, #f78989 100%);
+  box-shadow: 0 4px 12px rgba(245, 108, 108, 0.4);
+}
+
+.score-display.score-very-bearish .score-label,
+.score-display.score-very-bearish .score-value {
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.analysis-advice {
+  margin-bottom: 15px;
+  padding: 15px;
+  background: rgba(64, 158, 255, 0.08);
+  border-radius: 8px;
+  border-left: 4px solid #409eff;
+}
+
+.advice-text {
+  font-size: 16px !important;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.analysis-signals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.signal-tag {
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.indicators-row {
+  margin-top: 15px;
+}
+
+.indicator-card {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+  overflow: hidden;
+  height: 100%;
+}
+
+.indicator-card.macd-card {
+  border: 2px solid rgba(230, 162, 60, 0.3);
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(255, 245, 230, 0.6) 100%
+  );
+}
+
+.indicator-card.macd-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(230, 162, 60, 0.25);
+  border-color: rgba(230, 162, 60, 0.5);
+}
+
+.indicator-card.kdj-card {
+  border: 2px solid rgba(245, 108, 108, 0.3);
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(255, 240, 245, 0.6) 100%
+  );
+}
+
+.indicator-card.kdj-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(245, 108, 108, 0.25);
+  border-color: rgba(245, 108, 108, 0.5);
+}
+
+.indicator-card.boll-card {
+  border: 2px solid rgba(64, 158, 255, 0.3);
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(236, 245, 255, 0.6) 100%
+  );
+}
+
+.indicator-card.boll-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(64, 158, 255, 0.25);
+  border-color: rgba(64, 158, 255, 0.5);
+}
+
+.indicator-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+}
+
+.indicator-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: #303133;
+  letter-spacing: 1px;
+}
+
+.indicator-desc {
+  font-size: 12px;
+  color: #909399;
+  font-weight: 500;
+}
+
+.indicator-values {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.indicator-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.indicator-item:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateX(4px);
+}
+
+.item-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #606266;
+}
+
+.item-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #303133;
+  font-family: "Courier New", monospace;
+}
+
+.positive-value {
+  color: #f56c6c !important;
+}
+
+.negative-value {
+  color: #67c23a !important;
+}
+
+/* 股票新闻样式 */
+.stock-news-section {
+  margin-top: 25px;
+}
+
+.news-card {
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(103, 194, 58, 0.15);
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(240, 249, 235, 0.6) 100%
+  );
+}
+
+.news-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(103, 194, 58, 0.25);
+  border-color: rgba(103, 194, 58, 0.4);
+}
+
+.news-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.news-badge {
+  background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.news-time {
+  color: #909399;
+  font-size: 13px;
+}
+
+.news-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #303133;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.news-content {
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 15px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.news-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid rgba(103, 194, 58, 0.1);
+}
+
+.news-source {
+  color: #909399;
+  font-size: 13px;
+}
+
+/* 新闻弹窗样式 */
+.news-list {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.news-item-card {
+  margin-bottom: 16px;
+  border: 2px solid rgba(102, 126, 234, 0.1);
+  transition: all 0.3s ease;
+}
+
+.news-item-card:hover {
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.15);
+}
+
+.news-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.news-item-badge {
+  background: linear-gradient(135deg, #409eff 0%, #667eea 100%);
+  color: white;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.news-item-time {
+  color: #909399;
+  font-size: 13px;
+}
+
+.news-item-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #303133;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.news-item-content {
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+
+.news-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.news-item-source {
+  color: #909399;
+  font-size: 13px;
 }
 
 /* 移动端适配 */

@@ -3,6 +3,7 @@ from flask_cors import CORS
 import akshare as ak
 from datetime import datetime, timedelta
 import pandas as pd
+import pandas_ta as ta
 from io import BytesIO
 import os
 import requests
@@ -90,16 +91,16 @@ def get_stock_info():
         
         # 2. 获取最近两天的历史数据以及计算均线（使用类似下载接口的方法）
         try:
-            # 获取最近20天的数据，确保能计算5日线和10日线（考虑周末和节假日）
+            # 获取最近100天的数据，确保能计算5日线、10日线和技术指标（考虑周末和节假日）
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=20)
+            start_date = end_date - timedelta(days=100)
             
             history_df = ak.stock_zh_a_hist(
                 symbol=stock_code,
                 period='daily',
                 start_date=start_date.strftime('%Y%m%d'),
                 end_date=end_date.strftime('%Y%m%d'),
-                adjust=''
+                adjust='qfq'  # 使用前复权数据，与券商保持一致
             )
             
             if not history_df.empty and len(history_df) >= 1:
@@ -184,6 +185,233 @@ def get_stock_info():
                     '换手率': format_numeric_value(latest.get('换手率')),
                     '昨日数据': previous_data
                 }
+                
+                # 3. 计算技术指标 (MACD, KDJ, BOLL) 及交易信号分析
+                try:
+                    print(f"开始计算技术指标，数据行数: {len(history_df)}")
+                    # 需要足够的数据来计算指标 (至少30天)
+                    if len(history_df) >= 30:
+                        # 保存最近3天的指标数据用于趋势分析
+                        recent_3days = []
+                        # 计算 MACD (12, 26, 9)
+                        print("计算 MACD...")
+                        macd = ta.macd(history_df['收盘'], fast=12, slow=26, signal=9)
+                        if macd is not None and not macd.empty:
+                            # 获取最近3天的MACD数据
+                            for i in range(min(3, len(macd))):
+                                idx = -(3-i)
+                                if idx < -len(macd):
+                                    continue
+                                row = macd.iloc[idx]
+                                dif = row['MACD_12_26_9']
+                                dea = row['MACDs_12_26_9']
+                                if i == 2:  # 最新一天
+                                    realtime_data['MACD'] = {
+                                        'DIF': format_numeric_value(dif),
+                                        'DEA': format_numeric_value(dea),
+                                        'MACD': format_numeric_value((dif - dea) * 2)
+                                    }
+                                # 存储用于趋势分析
+                                if len(recent_3days) <= i:
+                                    recent_3days.append({})
+                                recent_3days[i]['MACD'] = {'DIF': dif, 'DEA': dea}
+                            print(f"MACD 数据已添加: {realtime_data.get('MACD')}")
+                        
+                        # 计算 KDJ (9, 3, 3) - 手动实现标准券商算法
+                        print("计算 KDJ...")
+                        try:
+                            n = 9
+                            low_min = history_df['最低'].rolling(window=n, min_periods=n).min()
+                            high_max = history_df['最高'].rolling(window=n, min_periods=n).max()
+                            rsv = (history_df['收盘'] - low_min) / (high_max - low_min) * 100
+                            
+                            k_values = [50]
+                            d_values = [50]
+                            
+                            for i in range(len(rsv)):
+                                if pd.isna(rsv.iloc[i]):
+                                    k_values.append(k_values[-1])
+                                    d_values.append(d_values[-1])
+                                else:
+                                    k = (2/3) * k_values[-1] + (1/3) * rsv.iloc[i]
+                                    k_values.append(k)
+                                    d = (2/3) * d_values[-1] + (1/3) * k
+                                    d_values.append(d)
+                            
+                            # 获取最近3天的KDJ
+                            for i in range(min(3, len(history_df))):
+                                idx = -(3-i)
+                                k_val = k_values[idx]
+                                d_val = d_values[idx]
+                                j_val = 3 * k_val - 2 * d_val
+                                
+                                if i == 2:  # 最新一天
+                                    realtime_data['KDJ'] = {
+                                        'K': format_numeric_value(k_val),
+                                        'D': format_numeric_value(d_val),
+                                        'J': format_numeric_value(j_val)
+                                    }
+                                # 存储用于趋势分析
+                                if len(recent_3days) <= i:
+                                    recent_3days.append({})
+                                recent_3days[i]['KDJ'] = {'K': k_val, 'D': d_val, 'J': j_val}
+                            
+                            print(f"KDJ 数据已添加: {realtime_data.get('KDJ')}")
+                        except Exception as kdj_e:
+                            print(f"KDJ 计算失败: {kdj_e}")
+                        
+                        # 计算 BOLL (20, 2)
+                        print("计算 BOLL...")
+                        bbands = ta.bbands(history_df['收盘'], length=20, std=2)
+                        if bbands is not None and not bbands.empty:
+                            bbl_col = [col for col in bbands.columns if 'BBL' in str(col)][0]
+                            bbm_col = [col for col in bbands.columns if 'BBM' in str(col)][0]
+                            bbu_col = [col for col in bbands.columns if 'BBU' in str(col)][0]
+                            
+                            # 获取最近3天的BOLL和收盘价
+                            for i in range(min(3, len(bbands))):
+                                idx = -(3-i)
+                                if idx < -len(bbands):
+                                    continue
+                                row = bbands.iloc[idx]
+                                close_price = history_df['收盘'].iloc[idx]
+                                
+                                if i == 2:  # 最新一天
+                                    realtime_data['BOLL'] = {
+                                        'UPPER': format_numeric_value(row[bbu_col]),
+                                        'MIDDLE': format_numeric_value(row[bbm_col]),
+                                        'LOWER': format_numeric_value(row[bbl_col])
+                                    }
+                                # 存储用于趋势分析
+                                if len(recent_3days) <= i:
+                                    recent_3days.append({})
+                                recent_3days[i]['BOLL'] = {
+                                    'UPPER': row[bbu_col],
+                                    'MIDDLE': row[bbm_col],
+                                    'LOWER': row[bbl_col],
+                                    'CLOSE': close_price
+                                }
+                            print(f"BOLL 数据已添加: {realtime_data.get('BOLL')}")
+                        
+                        # 4. 技术信号分析
+                        signals = []
+                        advice = ""
+                        score = 0  # 综合评分：正数看多，负数看空
+                        
+                        if len(recent_3days) >= 2:
+                            today = recent_3days[-1]
+                            yesterday = recent_3days[-2]
+                            
+                            # MACD 信号分析
+                            if 'MACD' in today and 'MACD' in yesterday:
+                                dif_today = today['MACD']['DIF']
+                                dea_today = today['MACD']['DEA']
+                                dif_yesterday = yesterday['MACD']['DIF']
+                                dea_yesterday = yesterday['MACD']['DEA']
+                                
+                                # 金叉：DIF上穿DEA
+                                if dif_yesterday <= dea_yesterday and dif_today > dea_today:
+                                    if dif_today > 0 and dea_today > 0:
+                                        signals.append("MACD水上金叉（强烈看多）")
+                                        score += 3
+                                    else:
+                                        signals.append("MACD零轴下金叉（谨慎看多）")
+                                        score += 1
+                                # 死叉：DIF下穿DEA
+                                elif dif_yesterday >= dea_yesterday and dif_today < dea_today:
+                                    if dif_today < 0 and dea_today < 0:
+                                        signals.append("MACD水下死叉（强烈看空）")
+                                        score -= 3
+                                    else:
+                                        signals.append("MACD零轴上死叉（谨慎看空）")
+                                        score -= 1
+                                # 持续多头
+                                elif dif_today > dea_today and dif_today > 0:
+                                    signals.append("MACD多头排列")
+                                    score += 1
+                                # 持续空头
+                                elif dif_today < dea_today and dif_today < 0:
+                                    signals.append("MACD空头排列")
+                                    score -= 1
+                            
+                            # KDJ 信号分析
+                            if 'KDJ' in today and 'KDJ' in yesterday:
+                                k_today = today['KDJ']['K']
+                                d_today = today['KDJ']['D']
+                                k_yesterday = yesterday['KDJ']['K']
+                                d_yesterday = yesterday['KDJ']['D']
+                                
+                                # 金叉
+                                if k_yesterday <= d_yesterday and k_today > d_today:
+                                    if k_today < 20:
+                                        signals.append("KDJ低位金叉（超卖反弹）")
+                                        score += 2
+                                    else:
+                                        signals.append("KDJ金叉")
+                                        score += 1
+                                # 死叉
+                                elif k_yesterday >= d_yesterday and k_today < d_today:
+                                    if k_today > 80:
+                                        signals.append("KDJ高位死叉（超买回调）")
+                                        score -= 2
+                                    else:
+                                        signals.append("KDJ死叉")
+                                        score -= 1
+                                # 超买
+                                elif k_today > 80:
+                                    signals.append("KDJ超买区（警惕回调）")
+                                    score -= 1
+                                # 超卖
+                                elif k_today < 20:
+                                    signals.append("KDJ超卖区（关注反弹）")
+                                    score += 1
+                            
+                            # BOLL 信号分析
+                            if 'BOLL' in today:
+                                close = today['BOLL']['CLOSE']
+                                upper = today['BOLL']['UPPER']
+                                middle = today['BOLL']['MIDDLE']
+                                lower = today['BOLL']['LOWER']
+                                
+                                # 突破上轨
+                                if close > upper:
+                                    signals.append("突破布林上轨（强势上涨或超买）")
+                                    score += 1
+                                # 跌破下轨
+                                elif close < lower:
+                                    signals.append("跌破布林下轨（超跌反弹或继续下跌）")
+                                    score -= 1
+                                # 中轨附近
+                                elif abs(close - middle) / middle < 0.02:
+                                    signals.append("价格在布林中轨附近（方向待明确）")
+                        
+                        # 综合建议
+                        if score >= 4:
+                            advice = "强烈建议：买入或加仓，多个指标显示强烈看多信号"
+                        elif score >= 2:
+                            advice = "建议：可以考虑买入，技术面偏多"
+                        elif score >= -1:
+                            advice = "观望：信号不明确，建议等待更好的时机"
+                        elif score >= -3:
+                            advice = "建议：考虑减仓或止盈，技术面偏空"
+                        else:
+                            advice = "强烈建议：离场或止损，多个指标显示强烈看空信号"
+                        
+                        # 添加到返回数据
+                        realtime_data['技术分析'] = {
+                            '信号': signals if signals else ['暂无明显信号'],
+                            '综合评分': score,
+                            '操作建议': advice
+                        }
+                        print(f"技术分析完成: {realtime_data['技术分析']}")
+                    else:
+                        print(f"数据量不足，需要至少30天，当前只有 {len(history_df)} 天")
+                except Exception as tech_e:
+                    print(f"技术指标计算失败: {tech_e}")
+                    import traceback
+                    traceback.print_exc()
+                    # 技术指标失败不影响主流程
+                
         except Exception as e:
             print(f"实时数据获取失败: {e}")
             import traceback
@@ -825,6 +1053,53 @@ def get_wallpapers():
         return jsonify({
             'success': False,
             'message': f'获取壁纸失败: {str(e)}'
+        }), 500
+
+@app.route('/api/stock/news', methods=['GET'])
+def get_stock_news():
+    """
+    获取个股新闻资讯
+    参数: code - 股票代码（查询参数）
+    """
+    stock_code = request.args.get('code')
+    if not stock_code:
+        return jsonify({'success': False, 'message': '缺少股票代码参数'}), 400
+    
+    try:
+        # 使用 akshare 获取个股新闻
+        news_df = ak.stock_news_em(symbol=stock_code)
+        
+        if news_df.empty:
+            return jsonify({
+                'success': False,
+                'message': '暂无该股票的新闻资讯'
+            }), 404
+        
+        # 转换为字典列表
+        news_list = []
+        for index, row in news_df.iterrows():
+            news_item = {
+                '标题': row.get('新闻标题', ''),
+                '内容': row.get('新闻内容', ''),
+                '发布时间': str(row.get('发布时间', '')),
+                '来源': row.get('文章来源', ''),
+                '链接': row.get('新闻链接', '')
+            }
+            news_list.append(news_item)
+        
+        return jsonify({
+            'success': True,
+            'count': len(news_list),
+            'data': news_list
+        })
+        
+    except Exception as e:
+        print(f'获取股票新闻失败: {str(e)}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'获取股票新闻失败: {str(e)}'
         }), 500
 
 if __name__ == '__main__':

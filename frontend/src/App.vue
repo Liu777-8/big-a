@@ -18,9 +18,6 @@
             <el-tab-pane label="强势股票" name="strong">
               <StrongStocks ref="strongStocksRef" />
             </el-tab-pane>
-            <el-tab-pane label="壁纸页面" name="test">
-              <TestPage />
-            </el-tab-pane>
           </el-tabs>
         </div>
       </el-main>
@@ -33,7 +30,6 @@ import { ref, watch, onMounted } from "vue";
 import StockQuery from "./components/StockQuery.vue";
 import LimitUpBoard from "./components/LimitUpBoard.vue";
 import StrongStocks from "./components/StrongStocks.vue";
-import TestPage from "./components/TestPage.vue";
 
 const activeTab = ref("stock");
 const limitUpBoardRef = ref(null);
